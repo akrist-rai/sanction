@@ -14,7 +14,7 @@ The original design philosophy is restored:
 
 ## 2. Critical Bottlenecks & Code Remediations
 
-### ⚠️ Bottleneck A: Zombie Go Engine Sidecar Processes (Resource Leak)
+###  Bottleneck A: Zombie Go Engine Sidecar Processes (Resource Leak)
 * **File to Modify**: [src-tauri/src/lib.rs](src-tauri/src/lib.rs)
 * **Problem**: Spawning the Go engine sidecar process in an asynchronous OS thread using a standard `Command` structure does not kill the child process when the Tauri desktop app exits.
 * **Remediation**:
@@ -61,7 +61,7 @@ app.run(move |_app_handle, event| {
 
 ---
 
-### ⚠️ Bottleneck B: React Re-render Storms on Editor Keystrokes (Typing Lag)
+###  Bottleneck B: React Re-render Storms on Editor Keystrokes (Typing Lag)
 * **File to Modify**: [src/pages/IDE/index.tsx](src/pages/IDE/index.tsx)
 * **Problem**: On every single keystroke in the CodeMirror editor, the callback `updateNodeCode` modifies `nodesRef.current` and triggers a full-page force render (`forceRender({})`). This forces the entire workspace HUD, terminal, list panels, and other graph nodes to reconcile, causing typing lag.
 * **Remediation**: Since CodeMirror maintains its own document buffer, React only needs to render when the "modified" status of the node transitions from `false` to `true` (to display the dirty dot in the tab list). Skip triggering `forceRender` on all subsequent keystrokes while the file remains dirty.
@@ -93,7 +93,7 @@ const updateNodeCode = (id: string, code: string) => {
 
 ---
 
-### ⚠️ Bottleneck C: State Wiping & CodeMirror 6 Re-creation
+###  Bottleneck C: State Wiping & CodeMirror 6 Re-creation
 * **File to Modify**: [src/components/CodeMirrorEditor.tsx](src/components/CodeMirrorEditor.tsx)
 * **Problem**: Dynamic settings such as theme change (`palette.id` effect) and word wrap toggle (`wordWrap` effect) completely destroy the `EditorView` or recreate the `EditorState` from scratch. This wipes the editor's cursor position, selection ranges, scroll position, and undo/redo history.
 * **Remediation**: Integrate CodeMirror 6's native `Compartment` system to dynamically reconfigure theme extensions and word wrap.
@@ -125,7 +125,7 @@ view.dispatch({
 
 ---
 
-### ⚠️ Bottleneck D: Multiple Overlapping 20,000px SVG Elements (GPU Overload)
+###  Bottleneck D: Multiple Overlapping 20,000px SVG Elements (GPU Overload)
 * **File to Modify**: [src/pages/IDE/index.tsx](src/pages/IDE/index.tsx)
 * **Problem**: The group convex hulls are drawn using individual `<svg>` elements per group, each sized at `width={19998} height={19998}` and positioned at `left:-9999px` to support center translation. Multiple overlapping layers of this size exhaust GPU compositor resources, lagging canvas pan and zoom operations.
 * **Remediation**: Consolidate group convex hull renderings. Place them inside the single, already-existing background `Edges SVG` canvas container right before the connector paths, eliminating layer redundancy.
@@ -154,7 +154,7 @@ view.dispatch({
 
 ---
 
-### ⚠️ Bottleneck E: Physics Loop Complexity of O(E * N) per frame
+###  Bottleneck E: Physics Loop Complexity of O(E * N) per frame
 * **File to Modify**: [src/pages/IDE/index.tsx](src/pages/IDE/index.tsx)
 * **Problem**: The physics tick loop runs a double `find` lookup to find the source and target node objects for *each* edge: `nds.find(n => n.id === edge.source)`. This is an $O(N)$ lookup on every edge, resulting in $O(E \times N)$ time complexity. At 50 nodes and 100 edges, this processes ~10,000 checks every tick (30–60 times a second).
 * **Remediation**: At the start of the `tick()` function, build a temporary `Map<string, Node>` key-indexed by node ID. This turns node lookup into an $O(1)$ operation, reducing total complexity to $O(E + N)$.
@@ -188,15 +188,14 @@ const tick = (now: number) => {
 ```
 
 ---
-
-### ⚠️ Bottleneck F: Heavy Sync Filesystem Walks in Rust Tauri (IPC Blocking)
+###  Bottleneck F: Heavy Sync Filesystem Walks in Rust Tauri (IPC Blocking)
 * **File to Modify**: [src-tauri/src/lib.rs](src-tauri/src/lib.rs)
 * **Problem**: Tauri commands like `fs_tree`, `fs_search`, `fs_list_all`, and `fs_scan_imports` execute recursive directory walks and file reading synchronously on the async Tauri runtime thread pool. This stalls Tauri's backend execution pipeline.
 * **Remediation**: Aligning with the backend philosophy, offload directory traversal, imports scanning, and file indexing to the Go sidecar engine, which can handle heavy searches and walks concurrently using Goroutines and push results back.
 
 ---
 
-### ⚠️ Bottleneck G: Continuous Git Polling
+###  Bottleneck G: Continuous Git Polling
 * **File to Modify**: [src/components/GitPanelV2.tsx](src/components/GitPanelV2.tsx)
 * **Problem**: The git panel polls `git status` and `git log` every 5 seconds via `setInterval`. This constantly forks external `git` processes in the background, spiking CPU and Disk I/O when idle.
 * **Remediation**: Eliminate the `setInterval` polling loop. Leverage the existing `/ws/watch` file-watcher WebSocket connection. Whenever a filesystem change is detected (or when the window is focused), fire a debounced Git panel status refresh.
