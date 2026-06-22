@@ -1,0 +1,74 @@
+# ── Node / Bun ────────────────────────────────────────────
+node_modules/
+.pnp
+.pnp.js
+package-lock.json
+yarn.lock
+
+# ── Build output ──────────────────────────────────────────
+dist/
+out/
+build/
+release/
+dist-electron/
+coverage/
+.cache/
+.parcel-cache/
+
+# ── Rust / Tauri build artifacts (~18 GB) ────────────────
+src-tauri/target/
+
+# ── Android generated build dirs ─────────────────────────
+src-tauri/gen/android/build/
+src-tauri/gen/android/.gradle/
+src-tauri/gen/android/app/build/
+src-tauri/gen/android/buildSrc/build/
+src-tauri/gen/android/buildSrc/.gradle/
+src-tauri/gen/android/.idea/
+
+# ── APK / signing artifacts (~257 MB each) ───────────────
+*.apk
+*.aab
+*.idsig
+
+# ── Compiled Go engine binaries (~9.7 MB each) ───────────
+engine/engine
+engine/forbiden-engine
+engine/forbiden-engine-*
+
+# ── Tauri sidecar binaries & native assets ───────────────
+src-tauri/binaries/
+public/native/
+
+# ── Env / secrets ─────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── OS ────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# ── Logs ──────────────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Editor ────────────────────────────────────────────────
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ── TypeScript ────────────────────────────────────────────
+tsconfig.tsbuildinfo
+*.tsbuildinfo
+
+home

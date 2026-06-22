@@ -1,0 +1,169 @@
+# SANCTION IDE — Change Log
+
+## Phase 1 — 2026-06-19
+
+**Research basis:** Scraped Reddit/HN/GitHub issues + competitive analysis (Zed, Cursor, JetBrains, Helix, Sublime). Top unmet demand: visual git graph (11M abandoned extension), live command palette, recent projects, multi-editor innovations.
+
+---
+
+### 1. Visual Git Commit Graph (`GitPanelV2.tsx`)
+- Added CHANGES | HISTORY tab switcher to Git panel
+- `CommitGraph` component renders SVG branch lanes with bezier curves
+- Lane-assignment algorithm (computeLanes) handles branches and merges
+- Colored dots per lane (16-color palette), ring overlay for tagged commits
+- Click a dot/row to expand commit detail strip (hash, author, reltime, refs)
+- Ref badges: HEAD (red), branch (green), tag (yellow)
+- New IPC: `git-log-graph` returns commits with `parents[]`, `refs[]`, author, reltime
+
+### 2. Enhanced Command Palette (`IDE/index.tsx`)
+- 40+ commands organized by group (GRAPH, RUN, VIEW, EDIT, FILE, THEME)
+- Live theme preview: hovering any theme item instantly applies it to the editor
+- Real-time search filtering across command labels and groups
+- Group headers separate commands visually
+- Color swatch dots shown inline for each theme item
+- Escape restores previous theme if previewing
+- Action-based dispatch (replaces label-string matching)
+
+### 3. Recent Projects in TitleBar (`TitleBar.tsx`, `main.js`, `preload.js`)
+- File > Open Recent shows last 10 opened folders
+- Persisted in `recent-workspaces.json` in Electron userData
+- Auto-updates when any folder is opened via dialog or custom event
+- New IPCs: `fs:getRecentWorkspaces`, `fs:addRecentWorkspace`
+
+---
+
+## Phase 2 — 2026-06-19
+
+**Focus:** Core editing power — navigation, search, focus mode.
+
+### 1. Fuzzy File Finder (`IDE/index.tsx`, `main.js`, `preload.js`)
+- `Ctrl+P` opens `FileFinderModal` — fuzzy-searches all files in workspace
+- Loads full file list via new IPC `fs:listAllFiles` (walks dir, excludes node_modules/.git/dist etc.)
+- Fuzzy match + smart sort: exact name prefix first, then by path length
+- Arrow keys navigate, Enter opens, Escape closes
+- File icons and colors per language extension
+- "⌕ FILES" button added to topbar; also accessible from command palette
+
+### 2. Jump to Line (`IDE/index.tsx`, `CodeMirrorEditor.tsx`)
+- `Ctrl+G` opens `JumpToLineModal` with a number input
+- `jumpToLine` prop added to `CodeMirrorEditor` — triggers `EditorView.scrollIntoView` centered
+- `:N` button added in editor tab toolbar
+- Works in both main editor and Zen Mode
+
+### 3. Zen / Focus Mode (`IDE/index.tsx`, `ide.css`)
+- `Ctrl+Shift+Z` or "ZEN" button in topbar toggles Zen Mode
+- Full-screen editor overlay: hides topbar, sidebar, terminal, icon bar
+- Max-width 800px centered — distraction-free writing
+- Escape key exits Zen Mode
+- Works with all editor themes, line jump, and save
+
+### 4. Project-wide Search (`IDE/index.tsx`, `main.js`, `preload.js`)
+- New sidebar panel mode: "SEARCH FILES" (⌕ icon in icon bar, or `Ctrl+Shift+F`)
+- Debounced live search via new IPC `fs:searchInFiles` (350ms delay)
+- Results grouped by file with match count per file
+- Click any result → opens file and jumps to that exact line
+- File icons colored by language, line numbers shown per match
+
+### 5. File Outline Panel (`IDE/index.tsx`)
+- New sidebar mode: "OUTLINE" (≡ icon, or `Ctrl+Shift+O`)
+- Regex-based symbol extraction for JS/TS/Python/Go: functions and classes
+- Shows symbol name, type badge (◇ class / ƒ function), and line number
+- Click any symbol → jumps to that line in the editor
+
+### 6. New IPCs (`main.js`, `preload.js`)
+- `fs:listAllFiles` — recursively lists files, skips ignored dirs
+- `fs:searchInFiles` — searches text in all text files, returns {file, line, text, col}
+- `git:blame` — parses `git blame --line-porcelain` output (for future use)
+
+### 7. Keyboard Shortcuts Updated
+- `Ctrl+P` → File Finder (was: Command Palette)
+- `Ctrl+Shift+P` → Command Palette
+- `Ctrl+G` → Jump to Line
+- `Ctrl+Shift+Z` → Zen Mode toggle
+- `Ctrl+Shift+F` → Project Search (opens sidebar)
+- `Ctrl+Shift+O` → File Outline (opens sidebar)
+- `Ctrl+B` → Toggle Sidebar
+
+---
+
+## Phase 3 — 2026-06-19
+
+**Focus:** AI integration, split editor, smart formatting, command runner.
+
+### 1. AI Chat Assistant (`IDE/index.tsx`, `main.js`, `preload.js`)
+- New sidebar panel: "AI ASSISTANT" (✦ star icon in icon bar)
+- Powered by Anthropic API via new IPC `ai:chat` (routed through main process to avoid CORS)
+- Model selector: Haiku (fast) or Sonnet
+- "Include file" toggle — current open file is injected as context in the system prompt
+- API key stored in localStorage, entered via ⚙ inline key input
+- Markdown/code block rendering in responses (fenced blocks, inline code, bold)
+- Message history with clear button; Enter to send, Shift+Enter for newline
+- Command palette actions: `ai` → opens AI sidebar
+
+### 2. Split Editor (`IDE/index.tsx`)
+- ⬓ button in editor tab toolbar splits the current file into a side-by-side second pane
+- Split pane mirrors the active tab (same node, independent CodeMirrorEditor)
+- Both panes share the same node code state — edits sync bidirectionally
+- Close button (✕) in split pane header or clicking ⬓ again dismisses the split
+- Command palette actions: `split-vertical`, `split-horizontal`, `split-close`
+
+### 3. Smart Code Formatting (`CodeMirrorEditor.tsx`, `main.js`, `preload.js`)
+- FORMAT button now calls new IPC `fs:formatCode` — runs Prettier (JS/TS/CSS/HTML/JSON), Black (Python), or gofmt (Go)
+- Falls back to basic trim/blank-line cleanup if formatter not installed
+- Toast shows elapsed ms: "FORMATTED 142ms"
+- New IPC pattern: writes to OS temp file, runs formatter in-place, reads result
+
+### 4. Command Runner / Scripts Panel (`IDE/index.tsx`, `main.js`, `preload.js`)
+- New bottom panel tab: "⚙ SCRIPTS" (next to TERMINAL)
+- Reads `package.json` scripts and `Makefile` targets via new IPC `fs:getScripts`
+- Each script shows: source badge (NPM / MAKEFILE), name, full command
+- ▶ RUN button sends the command to the integrated terminal (XTerm pane)
+- Reload button refreshes the script list without reopening the panel
+
+### 5. New IPCs (`main.js`, `preload.js`)
+- `ai:chat` — calls Anthropic `/v1/messages`, supports model/system/messages params
+- `fs:formatCode` — temp-file formatter: Prettier / Black / gofmt by lang
+- `fs:getScripts` — reads `package.json` scripts + Makefile targets, returns `{name, cmd, source}[]`
+
+---
+
+## Phase 4 — 2026-06-19
+
+**Focus:** Multi-provider AI, GUI key management, format-on-save, AI commit generator.
+
+### 1. Multi-Provider AI (`main.js`, `preload.js`)
+- `ai:chat` IPC now routes to 5 providers via `provider` param:
+  - **Anthropic** — `/v1/messages` with `x-api-key` header (Claude Haiku, Sonnet, Opus)
+  - **OpenAI** — `/v1/chat/completions` with Bearer auth (GPT-4o, GPT-4o-mini, GPT-4 Turbo)
+  - **Google Gemini** — `generateContent` REST API (Gemini 2.0 Flash, 1.5 Pro/Flash)
+  - **OpenRouter** — OpenAI-compatible, 100+ models via one key (incl. free tiers)
+  - **Ollama** — local models, no API key, custom host (`http://localhost:11434`)
+- New IPC `ai:ollamaModels` — hits `/api/tags` to list installed local models
+
+### 2. AI Provider Settings GUI (`IDE/index.tsx` Settings panel)
+- Full "AI PROVIDERS" section in sidebar Settings panel
+- Provider selector: visual card picker with color-coded active state
+- Per-provider API key inputs (password fields) with direct link to each key page
+- Ollama host override + "Detect Local Models" button — fetches and lists installed models
+- Model selector per provider (predefined fast/powerful options)
+- All settings persisted in `localStorage` (`forbiden_ai_provider`, `forbiden_ai_keys`, `forbiden_ai_models`)
+
+### 3. AI Chat Panel — Provider-Aware (`IDE/index.tsx`)
+- Removed inline Anthropic-only key input — now uses global provider settings
+- Header badge shows active provider name + color + current model
+- Red no-key banner with link to Settings when key is missing
+- "⚙" button opens Settings panel directly at AI Providers section
+- Accent color follows active provider (purple for Anthropic, green for OpenAI, etc.)
+
+### 4. AI Commit Message Generator (`GitPanelV2.tsx`)
+- "✦ AI" button next to "Commit Message" label in the git panel
+- Fetches `git diff` + `git status` for the current working directory
+- Sends to the active AI provider with conventional commits instruction
+- Fills the commit message textarea with the generated message (editable before committing)
+- If no key is set, opens Settings automatically
+
+### 5. Format on Save (`IDE/index.tsx`, `CodeMirrorEditor.tsx`)
+- Toggle in Settings panel under "EDITOR" section
+- When enabled, `saveNodeToDisk` runs `fs:formatCode` on the file before writing
+- Supports JS/TS/JSX/TSX/CSS/JSON/HTML/MD/Python/Go
+- Persisted in `localStorage` (`forbiden_format_on_save`)

@@ -1,0 +1,40 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/schema/acl/capability.json",
+  "identifier": "default",
+  "description": "SANCTION desktop+Android default capabilities",
+  "platforms": ["android", "linux", "windows", "macOS"],
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "shell:allow-open",
+    "shell:allow-execute",
+    "shell:allow-spawn",
+    "dialog:allow-open",
+    "dialog:allow-save",
+    "os:allow-platform",
+    "os:allow-os-type",
+    "fs:default",
+    "fs:allow-read-text-file",
+    "fs:allow-write-text-file",
+    "fs:allow-read-file",
+    "fs:allow-write-file",
+    "fs:allow-read-dir",
+    "fs:allow-mkdir",
+    "fs:allow-remove",
+    "fs:allow-rename",
+    "fs:allow-copy-file",
+    "fs:allow-exists",
+    "fs:allow-stat",
+    "fs:scope-home-recursive",
+    "fs:scope-appdata-recursive",
+    "fs:scope-temp-recursive",
+    {
+      "identifier": "fs:scope",
+      "allow": [
+        { "path": "/sdcard/**" },
+        { "path": "/storage/emulated/0/**" },
+        { "path": "/data/local/tmp/**" }
+      ]
+    }
+  ]
+}
